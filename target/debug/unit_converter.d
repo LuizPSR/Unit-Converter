@@ -1,0 +1,1 @@
+/Users/luizpsr/Documents/Teste\ de\ Software/Unit-Converter/target/debug/unit_converter: /Users/luizpsr/Documents/Teste\ de\ Software/Unit-Converter/src/lib.rs /Users/luizpsr/Documents/Teste\ de\ Software/Unit-Converter/src/main.rs

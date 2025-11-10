@@ -1,7 +1,6 @@
 use std::env;
 use unit_converter::{AreaUnit, LengthUnit, MassUnit, TempUnit, Unit, VolUnit};
-use unit_converter::{convert_and_print_to, convert_and_print_all, convert};
-use unit_converter::TempUnit::{Celsius, Kelvin};
+use unit_converter::{convert_and_print_to, convert_and_print_all};
 
 enum Task {
     Error(String),
@@ -196,7 +195,6 @@ fn main() {
         Task::ConvertTo(value, a, b) => convert_and_print_to(value, a, b),
         Task::ConvertAll(value, a) => convert_and_print_all(value, a),
     }
-    println!("{}", convert(0.0, Unit::Temperature(Celsius), Unit::Temperature(Kelvin)));
 }
 
 #[cfg(test)]
@@ -216,16 +214,34 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_units() {
+    fn test_nonsensical_unit() {
         assert_eq!(parse_unit("ledsago"), None);
         assert_eq!(parse_unit(""), None);
-        assert_eq!(parse_unit("newtons"), None);
+    }
+
+    #[test]
+    fn test_parse_unavailable_units() {
+        assert_eq!(parse_unit("newtons"), None); // force
+        assert_eq!(parse_unit("mph"), None);     // speed
+        assert_eq!(parse_unit("seconds"), None); // time
+        assert_eq!(parse_unit("feet3"), None); // unimplemented volume
     }
 
     #[test]
     fn test_parser_no_arg() {
         // No args -> Help
         let args = vec![];
+        assert!(matches!(parser(args), Task::Help));
+    }
+
+    #[test]
+    fn test_parser_help_flags() {
+        // -h
+        let args = vec!["-h".to_string()];
+        assert!(matches!(parser(args), Task::Help));
+
+        // --help
+        let args = vec!["--help".to_string()];
         assert!(matches!(parser(args), Task::Help));
     }
 
@@ -284,7 +300,25 @@ mod tests {
     fn test_parser_unknown_unit() {
         let args = vec!["foobar".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("Unknown unit")),
+            Task::Error(msg) => assert!(msg.contains("Unknown unit 'foobar'")),
+            _ => panic!("Expected Task::Error for unknown unit"),
+        }
+    }
+
+    #[test]
+    fn test_parser_invalid_unit_single_arg() {
+        let args = vec!["foobar".to_string()];
+        match parser(args) {
+            Task::Error(msg) => assert!(msg.contains("Unknown unit 'foobar'")),
+            _ => panic!("Expected Task::Error for unknown unit"),
+        }
+    }
+
+    #[test]
+    fn test_parser_invalid_unit_value_unit() {
+        let args = vec!["10".to_string(), "foobar".to_string()];
+        match parser(args) {
+            Task::Error(msg) => assert!(msg.contains("Unknown unit 'foobar'")),
             _ => panic!("Expected Task::Error for unknown unit"),
         }
     }
@@ -300,10 +334,28 @@ mod tests {
 
     #[test]
     fn test_parser_invalid_units_pair() {
+        // Unit + invalid unit
         let args = vec!["m".to_string(), "foobar".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("Invalid unit")),
+            Task::Error(msg) => assert!(msg.contains("Invalid unit(s)")),
             _ => panic!("Expected Task::Error for invalid unit pair"),
+        }
+
+        // Invalid unit + valid unit
+        let args = vec!["foobar".to_string(), "m".to_string()];
+        match parser(args) {
+            Task::Error(msg) => assert!(msg.contains("Invalid unit(s)")),
+            _ => panic!("Expected Task::Error for invalid unit pair"),
+        }
+    }
+
+    #[test]
+    fn test_parser_invalid_unit_value_a_to_b() {
+        // Value + valid unit + invalid unit
+        let args = vec!["1.5".to_string(), "m".to_string(), "foobar".to_string()];
+        match parser(args) {
+            Task::Error(msg) => assert!(msg.contains("Invalid unit(s)")),
+            _ => panic!("Expected Task::Error for invalid unit pair in 3 args"),
         }
     }
 

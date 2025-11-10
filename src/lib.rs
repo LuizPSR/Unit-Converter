@@ -269,20 +269,45 @@ fn convert_from_standard(value: f32, unit: Unit) -> f32 {
     }
 }
 
-pub fn convert(value: f32, a: Unit, b: Unit) -> f32 {
-    convert_from_standard(
+fn check_compatibility(a: Unit, b: Unit) -> bool {
+    match (a, b) {
+        (Unit::Temperature(_), Unit::Temperature(_)) => true,
+        (Unit::Length(_), Unit::Length(_)) => true,
+        (Unit::Area(_), Unit::Area(_)) => true,
+        (Unit::Volume(_), Unit::Volume(_)) => true,
+        (Unit::Mass(_), Unit::Mass(_)) => true,
+
+        _ => false
+    }
+}
+
+pub fn convert(value: f32, a: Unit, b: Unit) -> Result<f32, String> {
+    // check compatibility
+    if !check_compatibility(a, b) {
+        return Err("Trying to convert incompatible units".to_string());
+    };
+
+    // convert
+    Ok(convert_from_standard(
         convert_to_standard(value, a),
         b
-    )
+    ))
 }
 
 pub fn convert_and_print_to(value: f32, a: Unit, b: Unit) {
-    let str_a = unit_to_string(a);
-    println!("{value} {str_a} equals to...");
+    match convert(value, a, b) {
+        Ok(converted) => {
+            let str_a = unit_to_string(a);
+            println!("{value:8} {str_a} equals to...");
 
-    let str_b = unit_to_string(b);
-    let converted = convert(value, a, b);
-    println!("\t {converted} {str_b}");
+            let str_b = unit_to_string(b);
+            println!("\t {converted:8} {str_b}");
+        },
+        Err(msg) => {
+            println!("{msg}");
+        }
+    }
+
 }
 
 fn fetch_all_units(unit: Unit) -> Vec<Unit> {
@@ -351,9 +376,61 @@ pub fn convert_and_print_all(value: f32, a: Unit) {
             continue;
         } else {
             let str_b = unit_to_string(unit);
-            let converted = convert(value, a, unit);
+
+            let converted = convert(value, a, unit).ok().unwrap();
 
             println!("\t {converted} {str_b}");
         }
+    }
+}
+
+#[cfg(test)]
+mod lib_tests {
+    use super::{
+        *,
+        Unit::*,
+        TempUnit::*,
+        AreaUnit::*,
+        MassUnit::*,
+    };
+
+    #[test]
+    fn test_scale_to_string() {
+        assert_eq!(scale_to_string(-3), "milli".to_string());
+        assert_eq!(scale_to_string(-2), "centi".to_string());
+        assert_eq!(scale_to_string(0), "".to_string());
+        assert_eq!(scale_to_string(3), "kilo".to_string());
+        assert_eq!(scale_to_string(1), "".to_string());
+        assert_eq!(scale_to_string(-5), "".to_string());
+    }
+
+    #[test]
+    fn test_power_of() {
+        // Positive powers
+        assert!((power_of(0) - 1.0).abs() < f32::EPSILON);
+        assert!((power_of(1) - 10.0).abs() < f32::EPSILON);
+        assert!((power_of(3) - 1000.0).abs() < f32::EPSILON);
+
+        // Negative powers
+        assert!((power_of(-1) - 0.1).abs() < 1e-6);
+        assert!((power_of(-2) - 0.01).abs() < 1e-6);
+        assert!((power_of(-3) - 0.001).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_compatibility_check() {
+        assert_eq!(check_compatibility(Area(Acre), Area(Hectare)), true);
+        assert_eq!(check_compatibility(Temperature(Fahrenheit), Mass(Pound)), false);
+    }
+
+    #[test]
+    fn test_fetch_units() {
+        let unit = Temperature(Kelvin);
+        let mut count = 0;
+        for x in fetch_all_units(unit) {
+            assert_eq!(check_compatibility(unit, x), true);
+            count+=1;
+        }
+        assert_eq!(count, 3);
     }
 }
