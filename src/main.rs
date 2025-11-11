@@ -1,7 +1,8 @@
 use std::env;
 use std::io;
+use std::io::Write;
 use unit_converter::{AreaUnit, LengthUnit, MassUnit, TempUnit, Unit, VolUnit};
-use unit_converter::{convert_and_print_to, convert_and_print_all};
+use unit_converter::{convert_and_print_to, convert_and_print_all, display_all_units_to}; // added display_all_units_to
 
 enum Task {
     Error(String),
@@ -11,63 +12,19 @@ enum Task {
     ConvertAll(f32, Unit),
 }
 
-fn print_help() {
-    println!("USAGE:");
-    println!("  -h, --help              Display this help message");
-    println!("  units                   Display all available units");
-    println!("  [unit]                  Convert 1.0 in an unit to all other possible units");
-    println!("  [value] [unit]          Convert a value in an unit to all other possible units");
-    println!("  [unit] [unit]           Convert a 1.0 in unit A to unit B");
-    println!("  [value] [unit] [unit]   Convert a value in unit A to unit B");
+fn print_help<W: io::Write>(writer: &mut W) {
+    writeln!(writer, "USAGE:").unwrap();
+    writeln!(writer, "  -h, --help              Display this help message").unwrap();
+    writeln!(writer, "  units                   Display all available units").unwrap();
+    writeln!(writer, "  [unit]                  Convert 1.0 in an unit to all other possible units").unwrap();
+    writeln!(writer, "  [value] [unit]          Convert a value in an unit to all other possible units").unwrap();
+    writeln!(writer, "  [unit] [unit]           Convert a 1.0 in unit A to unit B").unwrap();
+    writeln!(writer, "  [value] [unit] [unit]   Convert a value in unit A to unit B").unwrap();
 }
 
-fn display_units() {
-    println!("TEMPERATURE");
-    println!("    K, kelvin");
-    println!("    C, celsius");
-    println!("    F, fahrenheit");
-
-    println!("LENGTH");
-    println!("    mm, millimeters");
-    println!("    cm, centimeters");
-    println!("    m, meters");
-    println!("    km, kilometers");
-    println!("    in, inches");
-    println!("    ft, feet");
-    println!("    yd, yards");
-    println!("    mi, miles");
-
-    println!("AREA");
-    println!("    mm2, square millimeters");
-    println!("    cm2, square centimeters");
-    println!("    m2, square meters");
-    println!("    km2, square kilometers");
-    println!("    in2, square inches");
-    println!("    ft2, sqft, square feet");
-    println!("    yd2, square yards");
-    println!("    mi2, square miles");
-    println!("    ac, acres");
-    println!("    ha, hectare");
-
-    println!("VOLUME");
-    println!("    ml, milliliter");
-    println!("    l, liter");
-    println!("    mm3, cubic millimeters");
-    println!("    cm3, cubic centimeters");
-    println!("    m3, cubic meters");
-    println!("    teaspoons");
-    println!("    tablespoons");
-    println!("    cups");
-    println!("    pt, pints");
-    println!("    gal, gallons");
-
-    println!("WEIGHT");
-    println!("    mg, milligrams");
-    println!("    g, grams");
-    println!("    kg, kilograms");
-    println!("    oz, ounces");
-    println!("    lb, pounds");
-    println!("    st, stones");
+// Logic moved to lib.rs::display_all_units_to
+fn display_units<W: io::Write>(writer: &mut W) {
+    display_all_units_to(writer);
 }
 
 pub fn parse_unit(token: &str) -> Option<Unit> {
@@ -162,7 +119,12 @@ fn parser(tokens: Vec<String>) -> Task {
                 ) {
                     Task::ConvertTo(1.0, a, b)
                 } else {
-                    Task::Error("Invalid unit(s)".to_string())
+                    // Check if the first arg was a unit and the second was bad
+                    if parse_unit(&tokens[0]).is_some() {
+                        Task::Error(format!("Invalid target unit '{}'", tokens[1]))
+                    } else {
+                        Task::Error(format!("Invalid source unit '{}'", tokens[0]))
+                    }
                 }
             }
         }
@@ -174,7 +136,12 @@ fn parser(tokens: Vec<String>) -> Task {
                 ) {
                     Task::ConvertTo(val, a, b)
                 } else {
-                    Task::Error("Invalid unit(s)".to_string())
+                    // Refined error messages
+                    if parse_unit(&tokens[1]).is_none() {
+                        Task::Error(format!("Invalid source unit '{}'", tokens[1]))
+                    } else {
+                        Task::Error(format!("Invalid target unit '{}'", tokens[2]))
+                    }
                 }
             } else {
                 Task::Error("First argument must be a number".to_string())
@@ -187,20 +154,36 @@ fn parser(tokens: Vec<String>) -> Task {
 fn main() {
     let args = env::args().skip(1);
     let task = parser(args.collect());
+    let mut stdout = io::stdout();
+
     match task {
         Task::Error(msg) => {
-            println!("{msg}");
+            // Using writeln on stdout
+            writeln!(&mut stdout, "{msg}").unwrap();
         }
-        Task::Help => print_help(),
-        Task::DisplayUnits => display_units(),
-        Task::ConvertTo(value, a, b) => convert_and_print_to(&mut io::stdout(), value, a, b),
-        Task::ConvertAll(value, a) => convert_and_print_all(&mut io::stdout(), value, a),
+        Task::Help => print_help(&mut stdout),
+        Task::DisplayUnits => display_units(&mut stdout),
+        Task::ConvertTo(value, a, b) => convert_and_print_to(&mut stdout, value, a, b),
+        Task::ConvertAll(value, a) => convert_and_print_all(&mut stdout, value, a),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn test_print_help_output() {
+        let mut output = Cursor::new(Vec::new());
+        print_help(&mut output);
+        let output_string = String::from_utf8(output.into_inner()).unwrap();
+
+        // Check for specific lines to ensure all help text is present and formatted
+        assert!(output_string.contains("USAGE:\n"));
+        assert!(output_string.contains("  -h, --help              Display this help message\n"));
+        assert!(output_string.contains("  [value] [unit] [unit]   Convert a value in unit A to unit B\n"));
+    }
 
     #[test]
     fn test_parse_units() {
@@ -338,25 +321,31 @@ mod tests {
         // Unit + invalid unit
         let args = vec!["m".to_string(), "foobar".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("Invalid unit(s)")),
-            _ => panic!("Expected Task::Error for invalid unit pair"),
+            Task::Error(msg) => assert!(msg.contains("Invalid target unit 'foobar'")),
+            _ => panic!("Expected Task::Error for invalid unit pair (target)"),
         }
 
         // Invalid unit + valid unit
         let args = vec!["foobar".to_string(), "m".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("Invalid unit(s)")),
-            _ => panic!("Expected Task::Error for invalid unit pair"),
+            Task::Error(msg) => assert!(msg.contains("Invalid source unit 'foobar'")),
+            _ => panic!("Expected Task::Error for invalid unit pair (source)"),
         }
     }
 
     #[test]
     fn test_parser_invalid_unit_value_a_to_b() {
-        // Value + valid unit + invalid unit
+        // Value + valid unit + invalid unit (Target unit error)
         let args = vec!["1.5".to_string(), "m".to_string(), "foobar".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("Invalid unit(s)")),
-            _ => panic!("Expected Task::Error for invalid unit pair in 3 args"),
+            Task::Error(msg) => assert!(msg.contains("Invalid target unit 'foobar'")),
+            _ => panic!("Expected Task::Error for invalid target unit in 3 args"),
+        }
+        // Value + invalid unit + valid unit (Source unit error)
+        let args = vec!["1.5".to_string(), "foobar".to_string(), "m".to_string()];
+        match parser(args) {
+            Task::Error(msg) => assert!(msg.contains("Invalid source unit 'foobar'")),
+            _ => panic!("Expected Task::Error for invalid source unit in 3 args"),
         }
     }
 

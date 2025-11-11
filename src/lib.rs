@@ -307,11 +307,9 @@ pub fn convert_and_print_to<W: Write>(writer: &mut W, value: f32, a: Unit, b: Un
     match convert(value, a, b) {
         Ok(converted) => {
             let str_a = unit_to_string(a);
-            // Changed from {value:8} to {value:.6}
             writeln!(writer, "{value:.6} {str_a} equals to...").unwrap();
 
             let str_b = unit_to_string(b);
-            // Changed from {converted:8} to {converted:.6}
             writeln!(writer, "\t {converted:.6} {str_b}").unwrap();
         },
         Err(msg) => {
@@ -328,7 +326,10 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
             Unit::Temperature(TempUnit::Fahrenheit)
         ],
         Unit::Length(_) => vec![
+            Unit::Length(LengthUnit::Meter(-3)), // added common scaled units for completeness
+            Unit::Length(LengthUnit::Meter(-2)),
             Unit::Length(LengthUnit::Meter(0)),
+            Unit::Length(LengthUnit::Meter(3)),
 
             Unit::Length(LengthUnit::Inch),
             Unit::Length(LengthUnit::Feet),
@@ -336,7 +337,10 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
             Unit::Length(LengthUnit::Mile),
         ],
         Unit::Area(_) => vec![
+            Unit::Area(AreaUnit::Meter2(-3)), // added common scaled units for completeness
+            Unit::Area(AreaUnit::Meter2(-2)),
             Unit::Area(AreaUnit::Meter2(0)),
+            Unit::Area(AreaUnit::Meter2(3)),
 
             Unit::Area(AreaUnit::Inch2),
             Unit::Area(AreaUnit::Feet2),
@@ -347,8 +351,10 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
             Unit::Area(AreaUnit::Hectare)
         ],
         Unit::Volume(_) => vec![
+            Unit::Volume(VolUnit::Liter(-3)), // added common scaled units for completeness
             Unit::Volume(VolUnit::Liter(0)),
-
+            Unit::Volume(VolUnit::Meter3(-3)),
+            Unit::Volume(VolUnit::Meter3(-2)),
             Unit::Volume(VolUnit::Meter3(0)),
 
             Unit::Volume(VolUnit::TeaSpoon),
@@ -358,7 +364,9 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
             Unit::Volume(VolUnit::Gallon),
         ],
         Unit::Mass(_) => vec![
+            Unit::Mass(MassUnit::Gram(-3)), // added common scaled units for completeness
             Unit::Mass(MassUnit::Gram(0)),
+            Unit::Mass(MassUnit::Gram(3)),
 
             Unit::Mass(MassUnit::Ounce),
             Unit::Mass(MassUnit::Pound),
@@ -369,7 +377,6 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
 
 pub fn convert_and_print_all<W: Write>(writer: &mut W, value: f32, a: Unit) {
     let str_a = unit_to_string(a);
-    // Changed from {value} to {value:.6}
     writeln!(writer, "{value:.6} {str_a} equals to...").unwrap();
 
     let units = fetch_all_units(a);
@@ -379,13 +386,65 @@ pub fn convert_and_print_all<W: Write>(writer: &mut W, value: f32, a: Unit) {
         } else {
             let str_b = unit_to_string(unit);
 
+            // Using unwrap here is safe because fetch_all_units only returns
+            // compatible units, so convert() will always return Ok.
             let converted = convert(value, a, unit).ok().unwrap();
 
-            // Changed from {converted} to {converted:.6}
             writeln!(writer, "\t {converted:.6} {str_b}").unwrap();
         }
     }
 }
+
+// Function added, logic moved from main.rs::display_units
+pub fn display_all_units_to<W: Write>(writer: &mut W) {
+    writeln!(writer, "TEMPERATURE").unwrap();
+    writeln!(writer, "    K, kelvin").unwrap();
+    writeln!(writer, "    C, celsius").unwrap();
+    writeln!(writer, "    F, fahrenheit").unwrap();
+
+    writeln!(writer, "LENGTH").unwrap();
+    writeln!(writer, "    mm, millimeters").unwrap();
+    writeln!(writer, "    cm, centimeters").unwrap();
+    writeln!(writer, "    m, meters").unwrap();
+    writeln!(writer, "    km, kilometers").unwrap();
+    writeln!(writer, "    in, inches").unwrap();
+    writeln!(writer, "    ft, feet").unwrap();
+    writeln!(writer, "    yd, yards").unwrap();
+    writeln!(writer, "    mi, miles").unwrap();
+
+    writeln!(writer, "AREA").unwrap();
+    writeln!(writer, "    mm2, square millimeters").unwrap();
+    writeln!(writer, "    cm2, square centimeters").unwrap();
+    writeln!(writer, "    m2, square meters").unwrap();
+    writeln!(writer, "    km2, square kilometers").unwrap();
+    writeln!(writer, "    in2, square inches").unwrap();
+    writeln!(writer, "    ft2, sqft, square feet").unwrap();
+    writeln!(writer, "    yd2, square yards").unwrap();
+    writeln!(writer, "    mi2, square miles").unwrap();
+    writeln!(writer, "    ac, acres").unwrap();
+    writeln!(writer, "    ha, hectare").unwrap();
+
+    writeln!(writer, "VOLUME").unwrap();
+    writeln!(writer, "    ml, milliliter").unwrap();
+    writeln!(writer, "    l, liter").unwrap();
+    writeln!(writer, "    mm3, cubic millimeters").unwrap();
+    writeln!(writer, "    cm3, cubic centimeters").unwrap();
+    writeln!(writer, "    m3, cubic meters").unwrap();
+    writeln!(writer, "    teaspoons").unwrap();
+    writeln!(writer, "    tablespoons").unwrap();
+    writeln!(writer, "    cups").unwrap();
+    writeln!(writer, "    pt, pints").unwrap();
+    writeln!(writer, "    gal, gallons").unwrap();
+
+    writeln!(writer, "WEIGHT").unwrap();
+    writeln!(writer, "    mg, milligrams").unwrap();
+    writeln!(writer, "    g, grams").unwrap();
+    writeln!(writer, "    kg, kilograms").unwrap();
+    writeln!(writer, "    oz, ounces").unwrap();
+    writeln!(writer, "    lb, pounds").unwrap();
+    writeln!(writer, "    st, stones").unwrap();
+}
+
 
 #[cfg(test)]
 mod lib_tests {
@@ -416,11 +475,28 @@ mod lib_tests {
         // Expected: 1 meter ≈ 3.280839895 feet (1 / 0.3048)
         let expected_converted = 3.280840; // The value rounded to 6 decimal places
 
-        // This assertion now passes because the output is 1.000000
+        // Check the from value and its unit
         assert!(output_string.contains("1.000000 meters equals to..."));
 
         // Check the converted value, formatted to match the new print format (:.6)
         assert!(output_string.contains(&format!("\t {:.6} feet", expected_converted)));
+    }
+
+    #[test]
+    fn test_convert_and_print_all_output() {
+        let mut output = Cursor::new(Vec::new());
+
+        // Test conversion: 1 kg to all mass units
+        let value = 1.0;
+        let from_unit = Mass(Gram(3));
+
+        convert_and_print_all(&mut output, value, from_unit);
+
+        let output_string = String::from_utf8(output.into_inner()).unwrap();
+
+        assert!(output_string.contains("1.000000 kilograms equals to..."));
+        // 1 kg = 1000 g
+        assert!(output_string.contains("\t 1000.000000 grams"));
     }
 
     #[test]
@@ -441,6 +517,14 @@ mod lib_tests {
         assert_eq!(output_string.trim(), "Trying to convert incompatible units");
     }
 
+    // New test for convert function returning error on incompatible units
+    #[test]
+    fn test_convert_incompatible_units_error() {
+        let result = convert(1.0, Mass(Gram(0)), Temperature(Kelvin));
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Trying to convert incompatible units".to_string());
+    }
+
     #[test]
     fn test_scaled_units_to_string() {
         assert_eq!(unit_to_string(Area(Meter2(-3))), "square millimeters".to_string());
@@ -450,6 +534,16 @@ mod lib_tests {
 
         // defaults to...
         assert_eq!(unit_to_string(Length(Meter(4))), "[10 to the power of 4 of a] meters".to_string());
+    }
+
+    // New test for unscaled/non-metric units in unit_to_string
+    #[test]
+    fn test_unscaled_units_to_string() {
+        assert_eq!(unit_to_string(Unit::Temperature(TempUnit::Fahrenheit)), "fahrenheit".to_string());
+        assert_eq!(unit_to_string(Unit::Length(LengthUnit::Inch)), "inches".to_string());
+        assert_eq!(unit_to_string(Unit::Area(AreaUnit::Acre)), "acres".to_string());
+        assert_eq!(unit_to_string(Unit::Volume(VolUnit::TableSpoon)), "table spoons".to_string());
+        assert_eq!(unit_to_string(Unit::Mass(MassUnit::Stone)), "stones".to_string());
     }
 
     #[test]
@@ -469,6 +563,8 @@ mod lib_tests {
     fn test_compatibility_check() {
         assert_eq!(check_compatibility(Area(Acre), Area(Hectare)), true);
         assert_eq!(check_compatibility(Temperature(Fahrenheit), Mass(Pound)), false);
+        assert_eq!(check_compatibility(Length(Feet), Length(Mile)), true); // test two imperial length units
+        assert_eq!(check_compatibility(Volume(Liter(0)), Area(Acre)), false); // test volume vs area
     }
 
     #[test]
@@ -482,30 +578,50 @@ mod lib_tests {
 
         let unit = Length(Meter(0));
         let fetch = fetch_all_units(unit);
-        assert_eq!(fetch.len(), 5);
+        assert_eq!(fetch.len(), 8); // Now 8: 4 scaled meters + 4 imperial
         for x in fetch {
             assert_eq!(check_compatibility(unit, x), true);
         }
 
         let unit = Area(Feet2);
         let fetch = fetch_all_units(unit);
-        assert_eq!(fetch.len(), 7);
+        assert_eq!(fetch.len(), 10); // Now 10: 4 scaled m2 + 4 imperial area + 2 special
         for x in fetch {
             assert_eq!(check_compatibility(unit, x), true);
         }
 
         let unit = Volume(Cup);
         let fetch = fetch_all_units(unit);
-        assert_eq!(fetch.len(), 7);
+        assert_eq!(fetch.len(), 10); // Now 10: 2 liter + 3 m3 + 5 cooking/imperial
         for x in fetch {
             assert_eq!(check_compatibility(unit, x), true);
         }
 
         let unit = Mass(Ounce);
         let fetch = fetch_all_units(unit);
-        assert_eq!(fetch.len(), 4);
+        assert_eq!(fetch.len(), 6); // Now 6: 3 scaled grams + 3 imperial
         for x in fetch {
             assert_eq!(check_compatibility(unit, x), true);
         }
+    }
+
+    // New test for display_all_units_to
+    #[test]
+    fn test_display_all_units_to_output() {
+        let mut output = Cursor::new(Vec::new());
+        display_all_units_to(&mut output);
+        let output_string = String::from_utf8(output.into_inner()).unwrap();
+
+        // Check for section headers and a few specific units to confirm structure
+        assert!(output_string.contains("TEMPERATURE\n"));
+        assert!(output_string.contains("    K, kelvin\n"));
+        assert!(output_string.contains("LENGTH\n"));
+        assert!(output_string.contains("    ft, feet\n"));
+        assert!(output_string.contains("AREA\n"));
+        assert!(output_string.contains("    ha, hectare\n"));
+        assert!(output_string.contains("VOLUME\n"));
+        assert!(output_string.contains("    gal, gallons\n"));
+        assert!(output_string.contains("WEIGHT\n"));
+        assert!(output_string.contains("    kg, kilograms\n"));
     }
 }
