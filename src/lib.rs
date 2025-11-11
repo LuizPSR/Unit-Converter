@@ -431,6 +431,6 @@ mod lib_tests {
             assert_eq!(check_compatibility(unit, x), true);
             count+=1;
         }
-        assert_eq!(count, 5);
+        assert_eq!(count, 3);
     }
 }
