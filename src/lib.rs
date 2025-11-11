@@ -1,3 +1,5 @@
+use std::io::Write;
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Unit {
     Temperature(TempUnit),
@@ -61,10 +63,17 @@ pub enum MassUnit {
 
 fn scale_to_string(scale: i8) -> String {
     match scale {
+        -9 => "nano".to_string(),
+        -6 => "micro".to_string(),
         -3 => "milli".to_string(),
         -2 => "centi".to_string(),
+        0 => "".to_string(),
         3 => "kilo".to_string(),
-        _ => "".to_string(),
+        6 => "".to_string(),
+        9 => "giga".to_string(),
+        12 => "tera".to_string(),
+        15 => "penta".to_string(),
+        _ => format!("[10 to the power of {scale} of a] ").to_string(),
     }
 }
 
@@ -90,7 +99,7 @@ fn unit_to_string(unit: Unit) -> String {
         Unit::Area(area) => match area {
             AreaUnit::Meter2(i) => {
                 let prefix = scale_to_string(i);
-                format!("square {}meter", prefix)
+                format!("square {}meters", prefix)
             }
             AreaUnit::Inch2 => "square inches".to_string(),
             AreaUnit::Feet2 => "square feet".to_string(),
@@ -121,7 +130,7 @@ fn unit_to_string(unit: Unit) -> String {
                 let prefix = scale_to_string(i);
                 format!("{}grams", prefix)
             }
-            MassUnit::Ounce => "ounce".to_string(),
+            MassUnit::Ounce => "ounces".to_string(),
             MassUnit::Pound => "pounds".to_string(),
             MassUnit::Stone => "stones".to_string(),
         }
@@ -294,20 +303,21 @@ pub fn convert(value: f32, a: Unit, b: Unit) -> Result<f32, String> {
     ))
 }
 
-pub fn convert_and_print_to(value: f32, a: Unit, b: Unit) {
+pub fn convert_and_print_to<W: Write>(writer: &mut W, value: f32, a: Unit, b: Unit) {
     match convert(value, a, b) {
         Ok(converted) => {
             let str_a = unit_to_string(a);
-            println!("{value:8} {str_a} equals to...");
+            // Changed from {value:8} to {value:.6}
+            writeln!(writer, "{value:.6} {str_a} equals to...").unwrap();
 
             let str_b = unit_to_string(b);
-            println!("\t {converted:8} {str_b}");
+            // Changed from {converted:8} to {converted:.6}
+            writeln!(writer, "\t {converted:.6} {str_b}").unwrap();
         },
         Err(msg) => {
-            println!("{msg}");
+            writeln!(writer, "{msg}").unwrap();
         }
     }
-
 }
 
 fn fetch_all_units(unit: Unit) -> Vec<Unit> {
@@ -318,10 +328,7 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
             Unit::Temperature(TempUnit::Fahrenheit)
         ],
         Unit::Length(_) => vec![
-            Unit::Length(LengthUnit::Meter(-3)),
-            Unit::Length(LengthUnit::Meter(-2)),
             Unit::Length(LengthUnit::Meter(0)),
-            Unit::Length(LengthUnit::Meter(3)),
 
             Unit::Length(LengthUnit::Inch),
             Unit::Length(LengthUnit::Feet),
@@ -329,24 +336,20 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
             Unit::Length(LengthUnit::Mile),
         ],
         Unit::Area(_) => vec![
-            Unit::Area(AreaUnit::Meter2(-3)),
-            Unit::Area(AreaUnit::Meter2(-2)),
             Unit::Area(AreaUnit::Meter2(0)),
-            Unit::Area(AreaUnit::Meter2(3)),
 
             Unit::Area(AreaUnit::Inch2),
             Unit::Area(AreaUnit::Feet2),
             Unit::Area(AreaUnit::Yard2),
             Unit::Area(AreaUnit::Mile2),
+
+            Unit::Area(AreaUnit::Acre),
+            Unit::Area(AreaUnit::Hectare)
         ],
         Unit::Volume(_) => vec![
-            Unit::Volume(VolUnit::Liter(-3)),
             Unit::Volume(VolUnit::Liter(0)),
 
-            Unit::Volume(VolUnit::Meter3(-3)),
-            Unit::Volume(VolUnit::Meter3(-2)),
             Unit::Volume(VolUnit::Meter3(0)),
-            Unit::Volume(VolUnit::Meter3(3)),
 
             Unit::Volume(VolUnit::TeaSpoon),
             Unit::Volume(VolUnit::TableSpoon),
@@ -355,9 +358,7 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
             Unit::Volume(VolUnit::Gallon),
         ],
         Unit::Mass(_) => vec![
-            Unit::Mass(MassUnit::Gram(-3)),
             Unit::Mass(MassUnit::Gram(0)),
-            Unit::Mass(MassUnit::Gram(3)),
 
             Unit::Mass(MassUnit::Ounce),
             Unit::Mass(MassUnit::Pound),
@@ -366,9 +367,10 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
     }
 }
 
-pub fn convert_and_print_all(value: f32, a: Unit) {
+pub fn convert_and_print_all<W: Write>(writer: &mut W, value: f32, a: Unit) {
     let str_a = unit_to_string(a);
-    println!("{value} {str_a} equals to...");
+    // Changed from {value} to {value:.6}
+    writeln!(writer, "{value:.6} {str_a} equals to...").unwrap();
 
     let units = fetch_all_units(a);
     for unit in units {
@@ -379,7 +381,8 @@ pub fn convert_and_print_all(value: f32, a: Unit) {
 
             let converted = convert(value, a, unit).ok().unwrap();
 
-            println!("\t {converted} {str_b}");
+            // Changed from {converted} to {converted:.6}
+            writeln!(writer, "\t {converted:.6} {str_b}").unwrap();
         }
     }
 }
@@ -390,18 +393,63 @@ mod lib_tests {
         *,
         Unit::*,
         TempUnit::*,
+        LengthUnit::*,
         AreaUnit::*,
+        VolUnit::*,
         MassUnit::*,
     };
+    use std::io::Cursor; // Helper for reading the buffer
 
     #[test]
-    fn test_scale_to_string() {
-        assert_eq!(scale_to_string(-3), "milli".to_string());
-        assert_eq!(scale_to_string(-2), "centi".to_string());
-        assert_eq!(scale_to_string(0), "".to_string());
-        assert_eq!(scale_to_string(3), "kilo".to_string());
-        assert_eq!(scale_to_string(1), "".to_string());
-        assert_eq!(scale_to_string(-5), "".to_string());
+    fn test_convert_and_print_to_output() {
+        let mut output = Cursor::new(Vec::new());
+
+        // Test conversion: 1 meter to feet
+        let value = 1.0;
+        let from_unit = Length(Meter(0));
+        let to_unit = Length(Feet);
+
+        convert_and_print_to(&mut output, value, from_unit, to_unit);
+
+        let output_string = String::from_utf8(output.into_inner()).unwrap();
+
+        // Expected: 1 meter ≈ 3.280839895 feet (1 / 0.3048)
+        let expected_converted = 3.280840; // The value rounded to 6 decimal places
+
+        // This assertion now passes because the output is 1.000000
+        assert!(output_string.contains("1.000000 meters equals to..."));
+
+        // Check the converted value, formatted to match the new print format (:.6)
+        assert!(output_string.contains(&format!("\t {:.6} feet", expected_converted)));
+    }
+
+    #[test]
+    fn test_convert_and_print_incompatible_error_output() {
+        let mut output = Cursor::new(Vec::new());
+
+        // Test incompatible conversion: 1 kg to Celsius
+        let value = 1.0;
+        let from_unit = Mass(Gram(3));
+        let to_unit = Temperature(Celsius);
+
+        // Run the printing function, writing the error to the buffer
+        convert_and_print_to(&mut output, value, from_unit, to_unit);
+
+        let output_string = String::from_utf8(output.into_inner()).unwrap();
+
+        // Assert the error message is present
+        assert_eq!(output_string.trim(), "Trying to convert incompatible units");
+    }
+
+    #[test]
+    fn test_scaled_units_to_string() {
+        assert_eq!(unit_to_string(Area(Meter2(-3))), "square millimeters".to_string());
+        assert_eq!(unit_to_string(Volume(Liter(0))), "liters".to_string());
+        assert_eq!(unit_to_string(Length(Meter(-9))), "nanometers".to_string());
+        assert_eq!(unit_to_string(Length(Meter(3))), "kilometers".to_string());
+
+        // defaults to...
+        assert_eq!(unit_to_string(Length(Meter(4))), "[10 to the power of 4 of a] meters".to_string());
     }
 
     #[test]
@@ -412,9 +460,9 @@ mod lib_tests {
         assert!((power_of(3) - 1000.0).abs() < f32::EPSILON);
 
         // Negative powers
-        assert!((power_of(-1) - 0.1).abs() < 1e-6);
-        assert!((power_of(-2) - 0.01).abs() < 1e-6);
-        assert!((power_of(-3) - 0.001).abs() < 1e-6);
+        assert!((power_of(-1) - 0.1).abs() < f32::EPSILON);
+        assert!((power_of(-2) - 0.01).abs() < f32::EPSILON);
+        assert!((power_of(-3) - 0.001).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -426,11 +474,38 @@ mod lib_tests {
     #[test]
     fn test_fetch_units() {
         let unit = Temperature(Kelvin);
-        let mut count = 0;
-        for x in fetch_all_units(unit) {
+        let fetch = fetch_all_units(unit);
+        assert_eq!(fetch.len(), 3);
+        for x in fetch {
             assert_eq!(check_compatibility(unit, x), true);
-            count+=1;
         }
-        assert_eq!(count, 3);
+
+        let unit = Length(Meter(0));
+        let fetch = fetch_all_units(unit);
+        assert_eq!(fetch.len(), 5);
+        for x in fetch {
+            assert_eq!(check_compatibility(unit, x), true);
+        }
+
+        let unit = Area(Feet2);
+        let fetch = fetch_all_units(unit);
+        assert_eq!(fetch.len(), 7);
+        for x in fetch {
+            assert_eq!(check_compatibility(unit, x), true);
+        }
+
+        let unit = Volume(Cup);
+        let fetch = fetch_all_units(unit);
+        assert_eq!(fetch.len(), 7);
+        for x in fetch {
+            assert_eq!(check_compatibility(unit, x), true);
+        }
+
+        let unit = Mass(Ounce);
+        let fetch = fetch_all_units(unit);
+        assert_eq!(fetch.len(), 4);
+        for x in fetch {
+            assert_eq!(check_compatibility(unit, x), true);
+        }
     }
 }

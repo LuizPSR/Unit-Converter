@@ -1,4 +1,5 @@
 use std::env;
+use std::io;
 use unit_converter::{AreaUnit, LengthUnit, MassUnit, TempUnit, Unit, VolUnit};
 use unit_converter::{convert_and_print_to, convert_and_print_all};
 
@@ -192,8 +193,8 @@ fn main() {
         }
         Task::Help => print_help(),
         Task::DisplayUnits => display_units(),
-        Task::ConvertTo(value, a, b) => convert_and_print_to(value, a, b),
-        Task::ConvertAll(value, a) => convert_and_print_all(value, a),
+        Task::ConvertTo(value, a, b) => convert_and_print_to(&mut io::stdout(), value, a, b),
+        Task::ConvertAll(value, a) => convert_and_print_all(&mut io::stdout(), value, a),
     }
 }
 
