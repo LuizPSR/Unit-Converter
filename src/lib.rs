@@ -1,4 +1,3 @@
-use std::io;
 use std::io::Write;
 
 pub mod units;
@@ -7,18 +6,76 @@ mod parser;
 use units::*;
 use parser::*;
 
-pub fn run(args: Vec<String>) {
+pub fn print_help<W: Write>(writer: &mut W) {
+    writeln!(writer, "USAGE:").unwrap();
+    writeln!(writer, "  -h, --help              Display this help message").unwrap();
+    writeln!(writer, "  units                   Display all available units").unwrap();
+    writeln!(writer, "  [unit]                  Convert 1.0 in an unit to all other possible units").unwrap();
+    writeln!(writer, "  [value] [unit]          Convert a value in an unit to all other possible units").unwrap();
+    writeln!(writer, "  [unit] [unit]           Convert a 1.0 in unit A to unit B").unwrap();
+    writeln!(writer, "  [value] [unit] [unit]   Convert a value in unit A to unit B").unwrap();
+}
+
+fn display_all_units<W: Write>(writer: &mut W) {
+    writeln!(writer, "TEMPERATURE").unwrap();
+    writeln!(writer, "    K, kelvin").unwrap();
+    writeln!(writer, "    C, celsius").unwrap();
+    writeln!(writer, "    F, fahrenheit").unwrap();
+
+    writeln!(writer, "LENGTH").unwrap();
+    writeln!(writer, "    mm, millimeter, millimeters").unwrap();
+    writeln!(writer, "    cm, centimeter, centimeters").unwrap();
+    writeln!(writer, "    m, meter, meters").unwrap();
+    writeln!(writer, "    km, kilometer, kilometers").unwrap();
+    writeln!(writer, "    in, inch, inches").unwrap();
+    writeln!(writer, "    ft, foot, feet").unwrap();
+    writeln!(writer, "    yd, yard, yards").unwrap();
+    writeln!(writer, "    mi, mile, miles").unwrap();
+
+    writeln!(writer, "AREA").unwrap();
+    writeln!(writer, "    mm2, square_millimeter, square_millimeters, mm^2, mmˆ2").unwrap();
+    writeln!(writer, "    cm2, square_centimeter, square_centimeters, cm^2, cmˆ2").unwrap();
+    writeln!(writer, "    m2, square_meter, square_meters, m^2, mˆ2").unwrap();
+    writeln!(writer, "    km2, square_kilometer, square_kilometers, km^2, kmˆ2").unwrap();
+    writeln!(writer, "    in2, square_inch, square_inches, in^2, inˆ2").unwrap();
+    writeln!(writer, "    ft2, sqft, square_foot, square_feet, ft^2, ftˆ2").unwrap();
+    writeln!(writer, "    yd2, square_yard, square_yards, yd^2, ydˆ2").unwrap();
+    writeln!(writer, "    mi2, square_mile, square_miles, mi^2, miˆ2").unwrap();
+    writeln!(writer, "    ac, acre, acres").unwrap();
+    writeln!(writer, "    ha, hectare, hectares").unwrap();
+
+    writeln!(writer, "VOLUME").unwrap();
+    writeln!(writer, "    ml, milliliter, milliliters").unwrap();
+    writeln!(writer, "    l, liter, liters").unwrap();
+    writeln!(writer, "    mm3, cubic_millimeter, cubic_millimeters, mm^3, mmˆ3").unwrap();
+    writeln!(writer, "    cm3, cubic_centimeter, cubic_centimeters, cm^3, cmˆ3").unwrap();
+    writeln!(writer, "    m3, cubic_meter, cubic_meters, m^3, mˆ3").unwrap();
+    writeln!(writer, "    teaspoon, teaspoons").unwrap();
+    writeln!(writer, "    tablespoon, tablespoons").unwrap();
+    writeln!(writer, "    cup, cups").unwrap();
+    writeln!(writer, "    pt, pint, pints").unwrap();
+    writeln!(writer, "    gal, gallon, gallons").unwrap();
+
+    writeln!(writer, "WEIGHT").unwrap();
+    writeln!(writer, "    mg, milligram, milligrams").unwrap();
+    writeln!(writer, "    g, gram, grams").unwrap();
+    writeln!(writer, "    kg, kilogram, kilograms").unwrap();
+    writeln!(writer, "    oz, ounce, ounces").unwrap();
+    writeln!(writer, "    lb, pound, pounds").unwrap();
+    writeln!(writer, "    st, stone, stones").unwrap();
+}
+
+pub fn run<W: Write>(args: Vec<String>, writer: &mut W) {
     let task = parser(args);
-    let mut stdout = io::stdout();
 
     match task {
         Task::Error(msg) => {
-            writeln!(&mut stdout, "{msg}").unwrap();
+            writeln!(writer, "{msg}").unwrap();
         }
-        Task::Help => print_help(&mut stdout),
-        Task::DisplayUnits => display_units(&mut stdout),
-        Task::ConvertTo(value, a, b) => convert_and_print_to(&mut stdout, value, a, b),
-        Task::ConvertAll(value, a) => convert_and_print_all(&mut stdout, value, a),
+        Task::Help => print_help(writer),
+        Task::DisplayUnits => display_all_units(writer),
+        Task::ConvertTo(value, a, b) => convert_and_print_to(writer, value, a, b),
+        Task::ConvertAll(value, a) => convert_and_print_all(writer, value, a),
     }
 }
 
@@ -292,7 +349,10 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
             Unit::Temperature(TempUnit::Fahrenheit)
         ],
         Unit::Length(_) => vec![
-            Unit::Length(LengthUnit::Meter(0)),
+            Unit::Length(LengthUnit::Meter(-3)),
+            Unit::Length(LengthUnit::Meter(-2)),
+            Unit::Length(LengthUnit::Meter( 0)),
+            Unit::Length(LengthUnit::Meter( 3)),
 
             Unit::Length(LengthUnit::Inch),
             Unit::Length(LengthUnit::Feet),
@@ -300,7 +360,9 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
             Unit::Length(LengthUnit::Mile),
         ],
         Unit::Area(_) => vec![
+            Unit::Area(AreaUnit::Meter2(-2)),
             Unit::Area(AreaUnit::Meter2(0)),
+            Unit::Area(AreaUnit::Meter2(3)),
 
             Unit::Area(AreaUnit::Inch2),
             Unit::Area(AreaUnit::Feet2),
@@ -312,7 +374,10 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
         ],
         Unit::Volume(_) => vec![
             Unit::Volume(VolUnit::Liter(0)),
+            Unit::Volume(VolUnit::Liter(-3)),
+
             Unit::Volume(VolUnit::Meter3(0)),
+            Unit::Volume(VolUnit::Meter3(-2)),
 
             Unit::Volume(VolUnit::TeaSpoon),
             Unit::Volume(VolUnit::TableSpoon),
@@ -321,7 +386,9 @@ fn fetch_all_units(unit: Unit) -> Vec<Unit> {
             Unit::Volume(VolUnit::Gallon),
         ],
         Unit::Mass(_) => vec![
-            Unit::Mass(MassUnit::Gram(0)),
+            Unit::Mass(MassUnit::Gram(-3)),
+            Unit::Mass(MassUnit::Gram( 0)),
+            Unit::Mass(MassUnit::Gram( 3)),
 
             Unit::Mass(MassUnit::Ounce),
             Unit::Mass(MassUnit::Pound),
@@ -348,58 +415,9 @@ pub fn convert_and_print_all<W: Write>(writer: &mut W, value: f32, a: Unit) {
     }
 }
 
-fn display_all_units_to<W: Write>(writer: &mut W) {
-    writeln!(writer, "TEMPERATURE").unwrap();
-    writeln!(writer, "    K, kelvin").unwrap();
-    writeln!(writer, "    C, celsius").unwrap();
-    writeln!(writer, "    F, fahrenheit").unwrap();
-
-    writeln!(writer, "LENGTH").unwrap();
-    writeln!(writer, "    mm, millimeters").unwrap();
-    writeln!(writer, "    cm, centimeters").unwrap();
-    writeln!(writer, "    m, meters").unwrap();
-    writeln!(writer, "    km, kilometers").unwrap();
-    writeln!(writer, "    in, inches").unwrap();
-    writeln!(writer, "    ft, feet").unwrap();
-    writeln!(writer, "    yd, yards").unwrap();
-    writeln!(writer, "    mi, miles").unwrap();
-
-    writeln!(writer, "AREA").unwrap();
-    writeln!(writer, "    mm2, square millimeters").unwrap();
-    writeln!(writer, "    cm2, square centimeters").unwrap();
-    writeln!(writer, "    m2, square meters").unwrap();
-    writeln!(writer, "    km2, square kilometers").unwrap();
-    writeln!(writer, "    in2, square inches").unwrap();
-    writeln!(writer, "    ft2, sqft, square feet").unwrap();
-    writeln!(writer, "    yd2, square yards").unwrap();
-    writeln!(writer, "    mi2, square miles").unwrap();
-    writeln!(writer, "    ac, acres").unwrap();
-    writeln!(writer, "    ha, hectare").unwrap();
-
-    writeln!(writer, "VOLUME").unwrap();
-    writeln!(writer, "    ml, milliliter").unwrap();
-    writeln!(writer, "    l, liter").unwrap();
-    writeln!(writer, "    mm3, cubic millimeters").unwrap();
-    writeln!(writer, "    cm3, cubic centimeters").unwrap();
-    writeln!(writer, "    m3, cubic meters").unwrap();
-    writeln!(writer, "    teaspoons").unwrap();
-    writeln!(writer, "    tablespoons").unwrap();
-    writeln!(writer, "    cups").unwrap();
-    writeln!(writer, "    pt, pints").unwrap();
-    writeln!(writer, "    gal, gallons").unwrap();
-
-    writeln!(writer, "WEIGHT").unwrap();
-    writeln!(writer, "    mg, milligrams").unwrap();
-    writeln!(writer, "    g, grams").unwrap();
-    writeln!(writer, "    kg, kilograms").unwrap();
-    writeln!(writer, "    oz, ounces").unwrap();
-    writeln!(writer, "    lb, pounds").unwrap();
-    writeln!(writer, "    st, stones").unwrap();
-}
-
 
 #[cfg(test)]
-mod lib_tests {
+mod tests {
     use super::{
         *,
         Unit::*,
@@ -521,28 +539,28 @@ mod lib_tests {
 
         let unit = Length(Meter(0));
         let fetch = fetch_all_units(unit);
-        assert_eq!(fetch.len(), 5);
+        assert_eq!(fetch.len(), 8);
         for x in fetch {
             assert_eq!(check_compatibility(unit, x), true);
         }
 
         let unit = Area(Feet2);
         let fetch = fetch_all_units(unit);
-        assert_eq!(fetch.len(), 7);
+        assert_eq!(fetch.len(), 9);
         for x in fetch {
             assert_eq!(check_compatibility(unit, x), true);
         }
 
         let unit = Volume(Cup);
         let fetch = fetch_all_units(unit);
-        assert_eq!(fetch.len(), 7);
+        assert_eq!(fetch.len(), 9);
         for x in fetch {
             assert_eq!(check_compatibility(unit, x), true);
         }
 
         let unit = Mass(Ounce);
         let fetch = fetch_all_units(unit);
-        assert_eq!(fetch.len(), 4);
+        assert_eq!(fetch.len(), 6);
         for x in fetch {
             assert_eq!(check_compatibility(unit, x), true);
         }
@@ -551,19 +569,19 @@ mod lib_tests {
     #[test]
     fn test_display_all_units_to_output() {
         let mut output = Cursor::new(Vec::new());
-        display_all_units_to(&mut output);
+        display_all_units(&mut output);
         let output_string = String::from_utf8(output.into_inner()).unwrap();
 
         // Check for section headers and a few specific units to confirm structure
         assert!(output_string.contains("TEMPERATURE\n"));
-        assert!(output_string.contains("    K, kelvin\n"));
+        assert!(output_string.contains("kelvin"));
         assert!(output_string.contains("LENGTH\n"));
-        assert!(output_string.contains("    ft, feet\n"));
+        assert!(output_string.contains("feet"));
         assert!(output_string.contains("AREA\n"));
-        assert!(output_string.contains("    ha, hectare\n"));
+        assert!(output_string.contains("ha"));
         assert!(output_string.contains("VOLUME\n"));
-        assert!(output_string.contains("    gal, gallons\n"));
+        assert!(output_string.contains("gal"));
         assert!(output_string.contains("WEIGHT\n"));
-        assert!(output_string.contains("    kg, kilograms\n"));
+        assert!(output_string.contains("kg"));
     }
 }

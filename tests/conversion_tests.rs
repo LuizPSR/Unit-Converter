@@ -24,7 +24,7 @@ fn test_conversion_temperature() {
 }
 
 #[test]
-fn test_conversion_length() {
+fn test_conversion_length_metric() {
     // 1 meter = 100 cm
     let cm = convert(1.0, Length(Meter(0)), Length(Meter(-2))).ok().unwrap();
     assert!((cm - 100.0).abs() < 1e-3);
@@ -54,7 +54,7 @@ fn test_conversion_length_imperial() {
 }
 
 #[test]
-fn test_conversion_area() {
+fn test_conversion_area_metric() {
     // 1 m² = 10,000 cm²
     let cm2 = convert(1.0, Area(Meter2(0)), Area(Meter2(-2))).ok().unwrap();
     assert!((cm2 - 10_000.0).abs() < 1e-3);
@@ -73,7 +73,7 @@ fn test_conversion_area() {
 }
 
 #[test]
-fn test_conversion_area_milli_centi() {
+fn test_conversion_area_scaled_units() {
     // 1 m² = 1,000,000 mm²
     let mm2 = convert(1.0, Area(Meter2(0)), Area(Meter2(-3))).ok().unwrap();
     assert!((mm2 - 1_000_000.0).abs() < 1e-3);
@@ -84,7 +84,7 @@ fn test_conversion_area_milli_centi() {
 }
 
 #[test]
-fn test_conversion_volume() {
+fn test_conversion_volume_metric() {
     // 1 liter = 1000 ml
     let ml = convert(1.0, Volume(Liter(0)), Volume(Liter(-3))).ok().unwrap();
     assert!((ml - 1000.0).abs() < 1e-3);
@@ -103,7 +103,7 @@ fn test_conversion_volume() {
 }
 
 #[test]
-fn test_conversion_volume_cooking() {
+fn test_conversion_volume_imperial() {
     // 1 tablespoon = 3 teaspoons
     let teaspoons = convert(1.0, Volume(TableSpoon), Volume(TeaSpoon)).ok().unwrap();
     assert!((teaspoons - 3.0).abs() < 1e-3);
@@ -114,7 +114,7 @@ fn test_conversion_volume_cooking() {
 }
 
 #[test]
-fn test_conversion_mass() {
+fn test_conversion_mass_metric() {
     // 1 kg = 1000 g
     let g = convert(1.0, Mass(Gram(3)), Mass(Gram(0))).ok().unwrap();
     assert!((g - 1000.0).abs() < 1e-3);
@@ -142,9 +142,9 @@ fn test_conversion_mass_imperial() {
     let lb = convert(1.0, Mass(Stone), Mass(Pound)).ok().unwrap();
     assert!((lb - 14.0).abs() < 1e-3);
 }
-
 #[test]
 fn test_converting_incompatible_units() {
+
     let g = convert(1.0, Mass(Stone), Temperature(Kelvin)).is_ok();
     assert_eq!(g, false);
 

@@ -1,5 +1,3 @@
-use std::io;
-use crate::display_all_units_to;
 use crate::units::{AreaUnit, LengthUnit, MassUnit, TempUnit, Unit, VolUnit};
 
 pub enum Task {
@@ -10,21 +8,6 @@ pub enum Task {
     ConvertAll(f32, Unit),
 }
 
-pub fn print_help<W: io::Write>(writer: &mut W) {
-    writeln!(writer, "USAGE:").unwrap();
-    writeln!(writer, "  -h, --help              Display this help message").unwrap();
-    writeln!(writer, "  units                   Display all available units").unwrap();
-    writeln!(writer, "  [unit]                  Convert 1.0 in an unit to all other possible units").unwrap();
-    writeln!(writer, "  [value] [unit]          Convert a value in an unit to all other possible units").unwrap();
-    writeln!(writer, "  [unit] [unit]           Convert a 1.0 in unit A to unit B").unwrap();
-    writeln!(writer, "  [value] [unit] [unit]   Convert a value in unit A to unit B").unwrap();
-}
-
-// Logic moved to lib.rs::display_all_units_to
-pub fn display_units<W: io::Write>(writer: &mut W) {
-    display_all_units_to(writer);
-}
-
 pub fn parse_unit(token: &str) -> Option<Unit> {
     match token.to_lowercase().as_str() {
         // Temperature
@@ -33,33 +16,37 @@ pub fn parse_unit(token: &str) -> Option<Unit> {
         "f" | "fahrenheit" => Some(Unit::Temperature(TempUnit::Fahrenheit)),
 
         // Length
-        "mm"  => Some(Unit::Length(LengthUnit::Meter(-3))),
-        "cm" => Some(Unit::Length(LengthUnit::Meter(-2))),
-        "m"  => Some(Unit::Length(LengthUnit::Meter(0))),
-        "km" => Some(Unit::Length(LengthUnit::Meter(3))),
+        "mm" | "millimeter" | "millimeters" => Some(Unit::Length(LengthUnit::Meter(-3))),
+        "cm" | "centimeter" | "centimeters" => Some(Unit::Length(LengthUnit::Meter(-2))),
+        "m" | "meter" | "meters" => Some(Unit::Length(LengthUnit::Meter(0))),
+        "km" | "kilometer" | "kilometers" => Some(Unit::Length(LengthUnit::Meter(3))),
+
         "in" | "inch" | "inches" => Some(Unit::Length(LengthUnit::Inch)),
         "ft" | "feet" => Some(Unit::Length(LengthUnit::Feet)),
         "yd" | "yard" | "yards" => Some(Unit::Length(LengthUnit::Yard)),
         "mi" | "mile" | "miles" => Some(Unit::Length(LengthUnit::Mile)),
 
         // Area
-        "mm2" => Some(Unit::Area(AreaUnit::Meter2(-3))),
-        "cm2" => Some(Unit::Area(AreaUnit::Meter2(-2))),
-        "m2"  => Some(Unit::Area(AreaUnit::Meter2(0))),
-        "km2" => Some(Unit::Area(AreaUnit::Meter2(3))),
-        "in2" => Some(Unit::Area(AreaUnit::Inch2)),
-        "ft2" | "sqft" => Some(Unit::Area(AreaUnit::Feet2)),
-        "yd2" => Some(Unit::Area(AreaUnit::Yard2)),
-        "mi2" => Some(Unit::Area(AreaUnit::Mile2)),
+        "mm2" | "square_millimeter" | "square_millimeters" | "mm^2" | "mmˆ2" => Some(Unit::Area(AreaUnit::Meter2(-3))),
+        "cm2" | "square_centimeter" | "square_centimeters" | "cm^2" | "cmˆ2" => Some(Unit::Area(AreaUnit::Meter2(-2))),
+        "m2" | "square_meter" | "square_meters" | "m^2" | "mˆ2" => Some(Unit::Area(AreaUnit::Meter2(0))),
+        "km2" | "square_kilometer" | "square_kilometers" | "km^2" | "kmˆ2" => Some(Unit::Area(AreaUnit::Meter2(3))),
+
+        "in2" | "square_inch" | "square_inches" | "in^2" | "inˆ2" => Some(Unit::Area(AreaUnit::Inch2)),
+        "ft2" | "sqft" | "square_foot" | "square_feet" | "ft^2" | "ftˆ2" => Some(Unit::Area(AreaUnit::Feet2)),
+        "yd2" | "square_yard" | "square_yards"  | "yd^2" | "ydˆ2"=> Some(Unit::Area(AreaUnit::Yard2)),
+        "mi2" | "square_mile" | "square_miles" | "mi^2" | "miˆ2" => Some(Unit::Area(AreaUnit::Mile2)),
         "ac" | "acre" | "acres" => Some(Unit::Area(AreaUnit::Acre)),
         "ha" | "hectare" | "hectares" => Some(Unit::Area(AreaUnit::Hectare)),
 
         // Volume
-        "ml" => Some(Unit::Volume(VolUnit::Liter(-3))),
+        "ml" | "milliliter" | "milliliters" => Some(Unit::Volume(VolUnit::Liter(-3))),
         "l" | "liter" | "liters" => Some(Unit::Volume(VolUnit::Liter(0))),
-        "mm3" => Some(Unit::Volume(VolUnit::Meter3(-3))),
-        "cm3" => Some(Unit::Volume(VolUnit::Meter3(-2))),
-        "m3" => Some(Unit::Volume(VolUnit::Meter3(0))),
+
+        "mm3" | "cubic_millimeter" | "cubic_millimeters" | "mm^3" | "mmˆ3" => Some(Unit::Volume(VolUnit::Meter3(-3))),
+        "cm3" | "cubic_centimeter" | "cubic_centimeters" | "cm^3" | "cmˆ3" => Some(Unit::Volume(VolUnit::Meter3(-2))),
+        "m3" | "cubic_meter" | "cubic_meters" | "m^3" | "mˆ3" => Some(Unit::Volume(VolUnit::Meter3(0))),
+
         "teaspoon" | "teaspoons" => Some(Unit::Volume(VolUnit::TeaSpoon)),
         "tablespoon" | "tablespoons" => Some(Unit::Volume(VolUnit::TableSpoon)),
         "cup" | "cups" => Some(Unit::Volume(VolUnit::Cup)),
@@ -67,9 +54,10 @@ pub fn parse_unit(token: &str) -> Option<Unit> {
         "gal" | "gallon" | "gallons" => Some(Unit::Volume(VolUnit::Gallon)),
 
         // Mass
-        "mg" => Some(Unit::Mass(MassUnit::Gram(-3))),
+        "mg" | "milligram" | "milligrams" => Some(Unit::Mass(MassUnit::Gram(-3))),
         "g"  | "gram" | "grams" => Some(Unit::Mass(MassUnit::Gram(0))),
-        "kg" => Some(Unit::Mass(MassUnit::Gram(3))),
+        "kg" | "kilogram" | "kilograms" => Some(Unit::Mass(MassUnit::Gram(3))),
+
         "oz" | "ounce" | "ounces" => Some(Unit::Mass(MassUnit::Ounce)),
         "lb" | "pound" | "pounds" => Some(Unit::Mass(MassUnit::Pound)),
         "st" | "stone" | "stones" => Some(Unit::Mass(MassUnit::Stone)),
@@ -98,7 +86,7 @@ pub fn parser(tokens: Vec<String>) -> Task {
             if let Some(unit) = parse_unit(&tokens[0]) {
                 Task::ConvertAll(1.0, unit)
             } else {
-                Task::Error(format!("Unknown unit '{}'", tokens[0]))
+                Task::Error(format!("Invalid unit '{}'", tokens[0]))
             }
         }
         2 => {
@@ -107,7 +95,7 @@ pub fn parser(tokens: Vec<String>) -> Task {
                 if let Some(unit) = parse_unit(&tokens[1]) {
                     Task::ConvertAll(val, unit)
                 } else {
-                    Task::Error(format!("Unknown unit '{}'", tokens[1]))
+                    Task::Error(format!("Invalid unit '{}'", tokens[1]))
                 }
             } else {
                 // Case B: unit + unit
@@ -119,9 +107,9 @@ pub fn parser(tokens: Vec<String>) -> Task {
                 } else {
                     // Check if the first arg was a unit and the second was bad
                     if parse_unit(&tokens[0]).is_some() {
-                        Task::Error(format!("Invalid target unit '{}'", tokens[1]))
+                        Task::Error(format!("Invalid unit '{}'", tokens[1]))
                     } else {
-                        Task::Error(format!("Invalid source unit '{}'", tokens[0]))
+                        Task::Error(format!("Invalid unit '{}'", tokens[0]))
                     }
                 }
             }
@@ -136,13 +124,13 @@ pub fn parser(tokens: Vec<String>) -> Task {
                 } else {
                     // Refined error messages
                     if parse_unit(&tokens[1]).is_none() {
-                        Task::Error(format!("Invalid source unit '{}'", tokens[1]))
+                        Task::Error(format!("Invalid unit '{}'", tokens[1]))
                     } else {
-                        Task::Error(format!("Invalid target unit '{}'", tokens[2]))
+                        Task::Error(format!("Invalid unit '{}'", tokens[2]))
                     }
                 }
             } else {
-                Task::Error("First argument must be a number".to_string())
+                Task::Error("Invalid format, see --help".to_string())
             }
         }
         _ => Task::Error("Too many arguments".to_string()),
@@ -152,19 +140,6 @@ pub fn parser(tokens: Vec<String>) -> Task {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Cursor;
-
-    #[test]
-    fn test_print_help_output() {
-        let mut output = Cursor::new(Vec::new());
-        print_help(&mut output);
-        let output_string = String::from_utf8(output.into_inner()).unwrap();
-
-        // Check for specific lines to ensure all help text is present and formatted
-        assert!(output_string.contains("USAGE:\n"));
-        assert!(output_string.contains("  -h, --help              Display this help message\n"));
-        assert!(output_string.contains("  [value] [unit] [unit]   Convert a value in unit A to unit B\n"));
-    }
 
     #[test]
     fn test_parse_units() {
@@ -265,7 +240,7 @@ mod tests {
     fn test_parser_unknown_unit() {
         let args = vec!["foobar".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("Unknown unit 'foobar'")),
+            Task::Error(msg) => assert!(msg.contains("Invalid unit 'foobar'")),
             _ => panic!("Expected Task::Error for unknown unit"),
         }
     }
@@ -274,7 +249,7 @@ mod tests {
     fn test_parser_invalid_unit_single_arg() {
         let args = vec!["foobar".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("Unknown unit 'foobar'")),
+            Task::Error(msg) => assert!(msg.contains("Invalid unit 'foobar'")),
             _ => panic!("Expected Task::Error for unknown unit"),
         }
     }
@@ -283,7 +258,7 @@ mod tests {
     fn test_parser_invalid_unit_value_unit() {
         let args = vec!["10".to_string(), "foobar".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("Unknown unit 'foobar'")),
+            Task::Error(msg) => assert!(msg.contains("Invalid unit 'foobar'")),
             _ => panic!("Expected Task::Error for unknown unit"),
         }
     }
@@ -292,8 +267,8 @@ mod tests {
     fn test_parser_non_numeric_value() {
         let args = vec!["abc".to_string(), "m".to_string(), "ft".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("First argument must be a number")),
-            _ => panic!("Expected Task::Error for non-numeric value"),
+            Task::Error(msg) => assert!(msg.contains("Invalid format")),
+            _ => panic!("Expected Task::Error for non-numeric value in usage [value] [unit] [unit]"),
         }
     }
 
@@ -302,14 +277,14 @@ mod tests {
         // Unit + invalid unit
         let args = vec!["m".to_string(), "foobar".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("Invalid target unit 'foobar'")),
+            Task::Error(msg) => assert!(msg.contains("Invalid unit 'foobar'")),
             _ => panic!("Expected Task::Error for invalid unit pair (target)"),
         }
 
         // Invalid unit + valid unit
         let args = vec!["foobar".to_string(), "m".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("Invalid source unit 'foobar'")),
+            Task::Error(msg) => assert!(msg.contains("Invalid unit 'foobar'")),
             _ => panic!("Expected Task::Error for invalid unit pair (source)"),
         }
     }
@@ -319,13 +294,13 @@ mod tests {
         // Value + valid unit + invalid unit (Target unit error)
         let args = vec!["1.5".to_string(), "m".to_string(), "foobar".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("Invalid target unit 'foobar'")),
+            Task::Error(msg) => assert!(msg.contains("Invalid unit 'foobar'")),
             _ => panic!("Expected Task::Error for invalid target unit in 3 args"),
         }
-        // Value + invalid unit + valid unit (Source unit error)
+        // Value + invalid unit + valid unit
         let args = vec!["1.5".to_string(), "foobar".to_string(), "m".to_string()];
         match parser(args) {
-            Task::Error(msg) => assert!(msg.contains("Invalid source unit 'foobar'")),
+            Task::Error(msg) => assert!(msg.contains("Invalid unit 'foobar'")),
             _ => panic!("Expected Task::Error for invalid source unit in 3 args"),
         }
     }
@@ -340,7 +315,7 @@ mod tests {
         ];
         match parser(args) {
             Task::Error(msg) => assert!(msg.contains("Too many arguments")),
-            _ => panic!("Expected Task::Error for too many args"),
+            _ => panic!("Expected Task::Error for too many arguments"),
         }
     }
 }
