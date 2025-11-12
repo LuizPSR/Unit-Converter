@@ -1,11 +1,11 @@
 use unit_converter::{
     convert,
-    Unit::*,
-    TempUnit::*,
-    LengthUnit::*,
-    AreaUnit::*,
-    VolUnit::*,
-    MassUnit::*,
+    units::{Unit::*,
+     TempUnit::*,
+     LengthUnit::*,
+     AreaUnit::*,
+     VolUnit::*,
+     MassUnit::*, }
 };
 
 #[test]
@@ -37,8 +37,6 @@ fn test_conversion_length() {
     let m = convert(1.0, Length(Mile), Length(Meter(0))).ok().unwrap();
     assert!((m - 1609.344).abs() < 1e-3);
 }
-
-// --- New Conversion Tests ---
 
 #[test]
 fn test_conversion_length_imperial() {
