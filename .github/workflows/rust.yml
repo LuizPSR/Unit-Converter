@@ -27,9 +27,15 @@ jobs:
       - name: Generate Coverage
         run: cargo llvm-cov --cobertura --output_path cobertura.xml
 
-      - name: Upload coverage reports to Codecov
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: ./cobertura.xml
+          files: cobertura.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
