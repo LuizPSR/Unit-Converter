@@ -1,11 +1,18 @@
+use std::io::Cursor;
 use unit_converter::{
-    convert,
-    units::{Unit::*,
-     TempUnit::*,
-     LengthUnit::*,
-     AreaUnit::*,
-     VolUnit::*,
-     MassUnit::*, }
+    converter::{
+        convert,
+        convert_and_print_to,
+        convert_and_print_all
+    },
+    units::{
+        Unit::*,
+        TempUnit::*,
+        LengthUnit::*,
+        AreaUnit::*,
+        VolUnit::*,
+        MassUnit::*
+    }
 };
 
 #[test]
@@ -174,4 +181,55 @@ fn test_converting_compatible_units() {
 
     let g = convert(1.0, Mass(Stone), Mass(Gram(0))).is_ok();
     assert_eq!(g, true);
+}
+
+#[test]
+fn test_convert_and_print_to_output() {
+    let mut output = Cursor::new(Vec::new());
+
+    // Test conversion: 1 meter to feet
+    let value = 1.0;
+    let from_unit = Length(Meter(0));
+    let to_unit = Length(Feet);
+
+    convert_and_print_to(&mut output, value, from_unit, to_unit);
+
+    let output_string = String::from_utf8(output.into_inner()).unwrap();
+
+    // Expected: 1 meter ≈ 3.280839895 feet (1 / 0.3048)
+    let expected_converted = 3.280840; // The value rounded to 6 decimal places
+
+    assert!(output_string.contains("1.000000 meters equals to..."));
+    assert!(output_string.contains(&format!("\t {:.6} feet", expected_converted)));
+}
+
+#[test]
+fn test_convert_and_print_all_output() {
+    let mut output = Cursor::new(Vec::new());
+
+    let value = 1.0;
+    let from_unit = Mass(Gram(3));
+
+    convert_and_print_all(&mut output, value, from_unit);
+
+    let output_string = String::from_utf8(output.into_inner()).unwrap();
+
+    assert!(output_string.contains("1.000000 kilograms equals to..."));
+    // 1 kg = 1000 g
+    assert!(output_string.contains("\t 1000.000000 grams"));
+}
+
+#[test]
+fn test_convert_and_print_incompatible_error_output() {
+    let mut output = Cursor::new(Vec::new());
+
+    let value = 1.0;
+    let from_unit = Mass(Gram(3));
+    let to_unit = Temperature(Celsius);
+
+    convert_and_print_to(&mut output, value, from_unit, to_unit);
+
+    let output_string = String::from_utf8(output.into_inner()).unwrap();
+
+    assert_eq!(output_string.trim(), "Trying to convert incompatible units");
 }

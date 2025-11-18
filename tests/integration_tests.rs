@@ -35,11 +35,17 @@ fn test_units() {
 
     // should show all implemented units
 
+    // Check for section headers and a few specific units to confirm structure
     assert!(out.contains("TEMPERATURE\n"));
+    assert!(out.contains("kelvin"));
     assert!(out.contains("LENGTH\n"));
+    assert!(out.contains("feet"));
     assert!(out.contains("AREA\n"));
+    assert!(out.contains("ha"));
     assert!(out.contains("VOLUME\n"));
+    assert!(out.contains("gal"));
     assert!(out.contains("WEIGHT\n"));
+    assert!(out.contains("kg"));
 }
 
 #[test]
