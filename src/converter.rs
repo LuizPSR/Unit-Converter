@@ -10,13 +10,16 @@ fn scale_to_string(scale: i8) -> String {
         -6 => "micro".to_string(),
         -3 => "milli".to_string(),
         -2 => "centi".to_string(),
+        -1 => "deci".to_string(),
         0 => "".to_string(),
+        1 => "deca".to_string(),
+        2 => "hecto".to_string(),
         3 => "kilo".to_string(),
-        6 => "".to_string(),
+        6 => "mega".to_string(),
         9 => "giga".to_string(),
         12 => "tera".to_string(),
         15 => "penta".to_string(),
-        _ => format!("[10 to the power of {scale} of a] ").to_string(),
+        _ => format!("[10 to the power of {scale}] ").to_string(),
     }
 }
 

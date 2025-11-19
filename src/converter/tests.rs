@@ -21,9 +21,11 @@ fn test_scaled_units_to_string() {
     assert_eq!(unit_to_string(Volume(Liter(0))), "liters".to_string());
     assert_eq!(unit_to_string(Length(Meter(-9))), "nanometers".to_string());
     assert_eq!(unit_to_string(Length(Meter(3))), "kilometers".to_string());
+}
 
-    // defaults to...
-    assert_eq!(unit_to_string(Length(Meter(4))), "[10 to the power of 4 of a] meters".to_string());
+#[test]
+fn test_non_standard_scaled_unit_to_string() {
+    assert_eq!(unit_to_string(Length(Meter(4))), "[10 to the power of 4] meters".to_string());
 }
 
 #[test]
