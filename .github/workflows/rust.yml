@@ -22,15 +22,15 @@ jobs:
         run: cargo test --verbose
 
       - name: Install LLVM
-        run: cargo install cargo-llvm-cov
+        run: cargo install cargo2junit
 
       - name: Generate Coverage
-        run: cargo llvm-cov --cobertura --output-path cobertura.xml
+        run: RUSTC_BOOTSTRAP=1 cargo test -- -Z unstable-options --format json --report-time | cargo2junit > results.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: cobertura.xml
+          files: results.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
 
