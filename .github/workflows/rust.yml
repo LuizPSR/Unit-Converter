@@ -25,7 +25,7 @@ jobs:
         run: cargo install cargo-llvm-cov
 
       - name: Generate Coverage
-        run: cargo llvm-cov --cobertura --output_path cobertura.xml
+        run: cargo llvm-cov --cobertura --output-path cobertura.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
